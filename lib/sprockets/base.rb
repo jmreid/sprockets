@@ -47,18 +47,15 @@ module Sprockets
     # Returns a String digest or nil.
     def file_digest(path)
       if stat = self.stat(path)
-        # Caveat: Digests are cached by the path's current mtime. Its possible
-        # for a files contents to have changed and its mtime to have been
-        # negligently reset thus appearing as if the file hasn't changed on
-        # disk. Also, the mtime is only read to the nearest second. It's
-        # also possible the file was updated more than once in a given second.
-        key = UnloadedAsset.new(path, self).file_digest_key(stat.mtime.to_i)
+        digest = self.stat_digest(path, stat)
+        integrity_uri = self.hexdigest_integrity_uri(digest)
+
+        key = UnloadedAsset.new(path, self).file_digest_key(integrity_uri)
         cache.fetch(key) do
-          self.stat_digest(path, stat)
+          digest
         end
       end
     end
-
     # Find asset by logical path or expanded path.
     def find_asset(path, options = {})
       uri, _ = resolve(path, options.merge(compat: false))
